@@ -25,4 +25,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_fwwpm")
 
+[node name="DebugTexture" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.25
+anchor_bottom = 0.05
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.995681, 1)
+
 [connection signal="resized" from="ColorRect" to="ColorRect" method="_OnResize"]
