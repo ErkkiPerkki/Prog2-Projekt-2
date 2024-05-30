@@ -3,26 +3,29 @@ shader_type canvas_item;
 uniform vec2 canvasSize;
 uniform sampler2D particleData;
 uniform sampler2D particleColors;
+uniform sampler2D particleSizes;
 
 void fragment() 
 {	
 	float aspectRatio = canvasSize.y / canvasSize.x;
-	vec2 uv = (UV - vec2(0.5)) / vec2(aspectRatio, 1.);
+	vec2 uv = UV / vec2(aspectRatio, 1);
 	vec3 col = vec3(0.0);
 	int particles = textureSize(particleData, 0).x;
 	
+	float particleIncrement = 1.0 / float(particles);
+	float halfParticleIncrement = particleIncrement / 2.0;
+	
 	for (int x=0; x < particles; x++){
-		vec2 texturePos = vec2(float(x) / float(particles), 0.0);
+		vec2 texturePos = vec2(float(x) * particleIncrement, 0.0);
+		vec2 offset = vec2(halfParticleIncrement, 0.0);
 		vec4 data = texture(particleData, texturePos);
-		vec2 offset = vec2(0.5 / float(particles), 0.0);
 		vec3 color = texture(particleColors, texturePos + offset).rgb;
-		vec2 position = data.rg;
-		float size = data.b;
+		float size = texture(particleSizes, texturePos + offset).r;
 		
-		float dy = uv.y - (position - vec2(0.5)).y;
-		float dx = uv.x - (position - vec2(0.5)).x;
+		vec2 position = data.rg / vec2(aspectRatio, 1);
+		vec2 delta = uv - position;
 		
-		float distSquared = dy*dy + dx*dx;
+		float distSquared = dot(delta, delta);
 		if (distSquared <= size*size){
 			col = color;
 			break;

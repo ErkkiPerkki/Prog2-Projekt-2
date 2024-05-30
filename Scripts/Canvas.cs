@@ -1,20 +1,34 @@
 using Godot;
 using System;
-using System.Threading;
+using System.Collections.Generic;
+
+namespace ParticleSimulation;
 
 public partial class Canvas : ColorRect
 {
-    static int particles = 100;
+    static int particleAmount = 1000;
     static Random random = new();
+    float aspectRatio = 1f;
 
-    Image particleDataImage = Image.Create(particles, 1, false, Image.Format.Rgb8);
-    Image particleColorImage = Image.Create(particles, 1, false, Image.Format.Rgb8);
+    Image particleDataImage = Image.Create(particleAmount, 1, false, Image.Format.Rgb8);
+    Image particleColorImage = Image.Create(particleAmount, 1, false, Image.Format.Rgb8);
+    Image particleSizeImage = Image.Create(particleAmount, 1, false, Image.Format.Rh);
+    ImageTexture particleData = new();
+    ImageTexture particleColors = new();
+    ImageTexture particleSizes = new();
+
+    List<Particle> particles = new();
 
     public static Color[] ParticleColors = new Color[]
     {
-        new Color(0.776f, 0.302f, 1f),
-        new Color(1f, 1f, 1f),  
-        new Color(0.302f, 0.776f, 1f)
+        new Color(0.835f, 1.000f, 0.800f),
+        new Color(0.584f, 1.000f, 0.812f),
+        new Color(0.427f, 0.831f, 0.761f),
+        new Color(0.337f, 0.639f, 0.698f),
+        new Color(0.251f, 0.447f, 0.573f),
+        new Color(0.173f, 0.259f, 0.451f),
+        new Color(0.157f, 0.063f, 0.224f),
+        new Color(0.051f, 0.012f, 0.078f)
     };
 
     public static Color GetRandomColor()
@@ -25,22 +39,17 @@ public partial class Canvas : ColorRect
 
     public void Regenerate()
     {
-        for (int x = 0; x < particles; x++) {
+        particles.Clear();
+
+        for (int x = 0; x < particleAmount; x++) {
             float rx = random.NextSingle();
             float ry = random.NextSingle();
-            float rs = random.NextSingle() / 100f + 0.1f;
-            Color pos = new Color(rx, ry, rs);
-            Color color = GetRandomColor();
 
-            particleDataImage.SetPixel(x, 0, pos);
-            particleColorImage.SetPixel(x, 0, color);
+            Vector2 position = new(rx, ry);
+
+            Electron electron = new(position);
+            particles.Add(electron);
         }
-        ImageTexture particleData = ImageTexture.CreateFromImage(particleDataImage);
-        ImageTexture particleColors = ImageTexture.CreateFromImage(particleColorImage);
-        Material.Set("shader_parameter/particleData", particleData);
-        Material.Set("shader_parameter/particleColors", particleColors);
-
-        GetNode<TextureRect>("%DebugTexture").Texture = particleColors;
     }
 
     public override void _Input(InputEvent @event)
@@ -58,6 +67,27 @@ public partial class Canvas : ColorRect
 
     public override void _Process(double delta)
     {
-        Regenerate();
+        aspectRatio = Size.X / Size.Y;
+
+        for (int i = 0; i < particles.Count; i++) {
+            Particle particle = particles[i];
+            float x = particle.Position.X;
+            float y = particle.Position.Y;
+            Color data = new(x, y, particle.Size);
+            Color sizeData = new(particle.Size, 0, 0);
+
+            particleDataImage.SetPixel(i, 0, data);
+            particleColorImage.SetPixel(i, 0, particle.Color);
+            particleSizeImage.SetPixel(i, 0, sizeData);
+        }
+
+        particleData.SetImage(particleDataImage);
+        particleColors.SetImage(particleColorImage);
+        particleSizes.SetImage(particleSizeImage);
+        Material.Set("shader_parameter/particleData", particleData);
+        Material.Set("shader_parameter/particleColors", particleColors);
+        Material.Set("shader_parameter/particleSizes", particleSizes);
+
+        GetNode<TextureRect>("%DebugTexture").Texture = particleColors;
     }
 }
