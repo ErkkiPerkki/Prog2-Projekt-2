@@ -6,7 +6,7 @@ uniform sampler2D particleColors;
 uniform sampler2D particleSizes;
 
 void fragment() 
-{	
+{
 	float aspectRatio = canvasSize.y / canvasSize.x;
 	vec2 uv = UV / vec2(aspectRatio, 1);
 	vec3 col = vec3(0.0);

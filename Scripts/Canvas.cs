@@ -67,6 +67,7 @@ public partial class Canvas : ColorRect
 
     public override void _Process(double delta)
     {
+        DateTime start = DateTime.Now;
         aspectRatio = Size.X / Size.Y;
 
         for (int i = 0; i < particles.Count; i++) {
@@ -89,5 +90,7 @@ public partial class Canvas : ColorRect
         Material.Set("shader_parameter/particleSizes", particleSizes);
 
         GetNode<TextureRect>("%DebugTexture").Texture = particleColors;
+        TimeSpan dif = DateTime.Now - start;
+        GD.Print(dif.Milliseconds);
     }
 }
