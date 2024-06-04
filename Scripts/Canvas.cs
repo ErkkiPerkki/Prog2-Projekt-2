@@ -6,9 +6,8 @@ namespace ParticleSimulation;
 
 public partial class Canvas : ColorRect
 {
-    static int particleAmount = 1000;
+    static int particleAmount = 250;
     static Random random = new();
-    float aspectRatio = 1f;
 
     Image particleDataImage = Image.Create(particleAmount, 1, false, Image.Format.Rgb8);
     Image particleColorImage = Image.Create(particleAmount, 1, false, Image.Format.Rgb8);
@@ -65,11 +64,50 @@ public partial class Canvas : ColorRect
 		Material.Set("shader_parameter/canvasSize", canvasSize);
 	}
 
-    public override void _Process(double delta)
+    Dictionary<string, float> distanceCache = new();
+    public Vector2 ComputeForces(Particle p1)
     {
-        DateTime start = DateTime.Now;
-        aspectRatio = Size.X / Size.Y;
+        Vector2 force = Vector2.Zero;
 
+        for (int i = 0; i < particles.Count; i++) {
+            Particle p2 = particles[i];
+            if (p2.ID == p1.ID) continue;
+
+            Vector2 dif = p2.Position - p1.Position;
+            Vector2 dir = dif.Normalized();
+            float distance = dif.Length();
+
+            if (distanceCache.ContainsKey($"{p1.ID}-{p2.ID}")) {
+                distance = distanceCache[$"{p1.ID}-{p2.ID}"];
+            }
+            else {
+                distance = dif.Length();
+                distanceCache[$"{p1.ID}-{p2.ID}"] = distance;
+                distanceCache[$"{p2.ID}-{p1.ID}"] = distance;
+            }
+            if (distance <= (p1.Size+p2.Size)/2) continue;
+
+            double localForce = 1E+54 * (p1.Mass * p2.Mass / (distance * distance));
+            force += dir * (float)localForce;
+        }
+
+        return force;
+    }
+
+    public void UpdateParticles()
+    {
+        distanceCache.Clear();
+
+        for (int i=0; i < particles.Count; i++) {
+            Particle particle = particles[i];
+            Vector2 force = ComputeForces(particle);
+            particle.Velocity += force;
+            particle.Position += particle.Velocity;
+        }
+    }
+
+    public void RenderParticles()
+    {
         for (int i = 0; i < particles.Count; i++) {
             Particle particle = particles[i];
             float x = particle.Position.X;
@@ -90,7 +128,11 @@ public partial class Canvas : ColorRect
         Material.Set("shader_parameter/particleSizes", particleSizes);
 
         GetNode<TextureRect>("%DebugTexture").Texture = particleColors;
-        TimeSpan dif = DateTime.Now - start;
-        GD.Print(dif.Milliseconds);
+    }
+
+    public override void _Process(double delta)
+    {
+        UpdateParticles();
+        RenderParticles();
     }
 }
